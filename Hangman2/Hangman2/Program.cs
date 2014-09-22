@@ -20,6 +20,7 @@ namespace Hangman
         public static string usersGuess;
         public static bool won = false;
         public static string userName;
+        public static int score = 0;
 
         static void Main(string[] args)
         {
@@ -32,6 +33,9 @@ namespace Hangman
             //Playing the game. 
             //Divided each task into it's own function, so that code will be easy to manage and main looks clean
             PlayGame();
+
+            AddScoreToDB();
+            DisplayFromDB();
         }
 
         //function to greet the user and display rules
@@ -95,6 +99,7 @@ namespace Hangman
                     {
                         Console.WriteLine("\nSorry " + userName + " you ran out of lives. Game over");
                         won = true;
+                        score = 0;
                     }
                 }
 
@@ -114,6 +119,7 @@ namespace Hangman
                     //Console.WriteLine(randomWord);
                     won = true;
                     noOfLives = 0;
+                    score += 100;
                     return;
                 }
                 else
@@ -121,6 +127,7 @@ namespace Hangman
                     noOfLives--;
                     Console.WriteLine("You guessed wrong. You have " + noOfLives + " lives left");
                     Console.WriteLine("You have guessed: " + lettersGuessed);
+                    score--;
                     return;
                 }
             }
@@ -132,6 +139,7 @@ namespace Hangman
                 //verify if the word to be guessed has the letter entered by user
                 if (randomWord.Contains(guess))
                 {
+                    score += 10;
                     return;
                 }
                 else
@@ -139,9 +147,46 @@ namespace Hangman
                     noOfLives--;
                     Console.WriteLine("You guessed wrong. You have " + noOfLives + " lives left");
                     Console.WriteLine("You have guessed: " + lettersGuessed);
+                    score--;
                     return;
                 }
 
+            }
+        }
+
+        //add score to data base
+        static void AddScoreToDB()
+        {
+            Hangman2.JayaEntities db = new Hangman2.JayaEntities();
+
+            Hangman2.HighScore currentScore = new Hangman2.HighScore();
+
+            currentScore.DateCreated = DateTime.Now;
+            currentScore.Game = "Hangman";
+            currentScore.Name = userName;
+            currentScore.Score = score;
+
+            db.HighScores.Add(currentScore);
+            db.SaveChanges();
+        }
+
+        //display data from the data base
+        static void DisplayFromDB()
+        {
+            Hangman2.JayaEntities db = new Hangman2.JayaEntities();
+
+            Console.WriteLine("Press Enter to see high scores");
+            Console.ReadKey();
+            Console.Clear();
+
+            Console.WriteLine("High scores of Hangman");
+            Console.WriteLine("=======================");
+
+            List<Hangman2.HighScore> highScoresList = db.HighScores.Where(x => x.Game == "Hangman").OrderByDescending(x => x.Score).Take(10).ToList();
+
+            foreach (var item in highScoresList)
+            {
+                Console.WriteLine("{0}, {1}{2}  {3}", highScoresList.IndexOf(item)+1, item.Name, item.Score, item.DateCreated);
             }
         }
 
